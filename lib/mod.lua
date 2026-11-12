@@ -224,8 +224,12 @@ local function tick()
   if menu_visible() and st ~= "idle" then redraw() end
 end
 
-local function ensure_ticker()
-  if util.time() - S.last_tick < 3 then return end
+-- force: start a new clock even if the old one ticked recently. The script
+-- hooks need it: norns cancels all clocks right around them, so a clock
+-- that ticked a moment ago may already be gone.
+local function ensure_ticker(force)
+  if not force and util.time() - S.last_tick < 3 then return end
+  if S.ticker then pcall(clock.cancel, S.ticker) end
   S.last_tick = util.time()
   S.ticker = clock.run(function()
     while true do
@@ -402,5 +406,9 @@ mod.hook.register("system_pre_shutdown", "nullband_shutdown", function()
 end)
 
 -- clocks are cancelled when a script is cleared; start ours again
-mod.hook.register("script_pre_init", "nullband_pre_init", ensure_ticker)
-mod.hook.register("script_post_init", "nullband_post_init", ensure_ticker)
+-- (post_cleanup runs before clock.cleanup, so a clock started there would
+-- die; pre_init runs after it, post_init again once init has finished)
+mod.hook.register("script_pre_init", "nullband_pre_init",
+  function() ensure_ticker(true) end)
+mod.hook.register("script_post_init", "nullband_post_init",
+  function() ensure_ticker(true) end)

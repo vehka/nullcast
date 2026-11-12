@@ -50,7 +50,7 @@ local function config(c, opts)
     "realtime = no",
     "",
     "[input]",
-    "device = jack_noconnect",
+    "device = jack", -- darkice: "jack" does not auto-connect, "jack_auto" does
     "jackClientName = " .. Transmit.CLIENT,
     "sampleRate = 48000",
     "bitsPerSample = 16",
