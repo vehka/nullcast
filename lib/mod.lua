@@ -39,10 +39,17 @@ deps:add { id = "curl", label = "curl", check = "curl", pkg = "curl",
            size = "1 MB", why = "talks to nullband.org" }
 deps:add { id = "mpg123", label = "mpg123", check = "mpg123", pkg = "mpg123",
            size = "1 MB", why = "decodes the stations" }
-deps:add { id = "jack-stdio", label = "jack-stdio", check = "jack-stdin",
-           pkg = "jack-stdio", size = "1 MB", why = "plays them into JACK" }
+-- a small JACK client (lib/nullcast_rx.c), compiled here: norns images
+-- come with gcc and the JACK headers, since norns builds itself
+deps:add { id = "nullcast-rx", label = "nullcast-rx", check_file = listen.RX,
+           size = "build", why = "plays the stations into JACK",
+           cmd = "mkdir -p '" .. DATA .. "bin' && gcc -O2 -o '" .. listen.RX
+             .. "' '" .. ROOT .. "nullcast_rx.c' -ljack",
+           step_label = "compile nullcast-rx",
+           manual = "needs gcc and the JACK headers (libjack-jackd2-dev)",
+           uninstall = { { cmd = "rm -f '" .. listen.RX .. "'" } } }
 local TX_DEPS = { "darkice", "curl" }
-local RX_DEPS = { "curl", "mpg123", "jack-stdio" }
+local RX_DEPS = { "curl", "mpg123", "nullcast-rx" }
 
 local function uninstalled()
   return not util.file_exists(ROOT .. "mod.lua")
@@ -939,7 +946,7 @@ mod.hook.register("system_post_startup", "nullcast_startup", function()
   load_settings()
   -- processes left over from before a matron restart have lost their state
   transmit.stop()
-  listen.stop()
+  listen.stop(true)
   vis_stop()
 end)
 

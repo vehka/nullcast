@@ -77,9 +77,16 @@ function Transmit.pid()
   return s and tonumber(s:match("%d+"))
 end
 
+-- Looks in /proc instead of running kill -0: this is called on every
+-- tick, and each os.execute forks matron, which on norns 2.x also runs a
+-- non-realtime JACK client (matron-clock).
 function Transmit.running()
   local pid = Transmit.pid()
-  return pid ~= nil and sh("kill -0 " .. pid .. " 2>/dev/null")
+  local f = pid and io.open("/proc/" .. pid .. "/stat", "r")
+  if not f then return false end
+  local state = (f:read("*l") or ""):match("^%d+ %b() (%a)")
+  f:close()
+  return state ~= nil and state ~= "Z"
 end
 
 -- Last lines of darkice's log, for the error screen.

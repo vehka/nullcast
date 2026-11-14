@@ -18,8 +18,11 @@ others' streams is allowed.
 
 Enable it in SYSTEM > MODS, then restart norns. The first time you listen or
 request a token, the mod offers to install what that needs, through
-[norns-deps](https://github.com/vehka/norns-deps): `mpg123` and `jack-stdio`
-for listening, `darkice` for transmitting (and `curl` if it's missing).
+[norns-deps](https://github.com/vehka/norns-deps): `mpg123` and
+`nullcast-rx` for listening, `darkice` for transmitting (and `curl` if it's
+missing). `nullcast-rx` is a small JACK client in `lib/nullcast_rx.c`,
+compiled on the device in a few seconds with the gcc and JACK headers that
+norns images come with.
 
 ## Use
 
@@ -104,17 +107,22 @@ The mod polls `https://nullband.org/health` for the signals on air, and to
 see when your own stream is on air and which unit it got.
 
 Listening: `mpg123` in remote mode reads `http://nullband.org:8000/<mount>`
-and decodes it to 48 kHz float, buffering about half a second before it
-plays; `jack-stdin` plays that into JACK (client `jstdin`), connected to
-`crone:input_1/2` or `system:playback_1/2`. Tuning and the level go to
-mpg123 through a FIFO, so the JACK side stays connected.
+and decodes it to 48 kHz float; `nullcast-rx` plays that into JACK (client
+`nullcast_listen`, ports `left`/`right`), connected to `crone:input_1/2` or
+`system:playback_1/2`, with half a second of audio buffered before it
+starts and after any dropout. Tuning and the level go to mpg123 through a
+FIFO, so the JACK side stays connected. Both run with realtime limits
+(raised with `sudo prlimit` where norns doesn't grant them, as on 2.x), and
+stopping asks mpg123 to quit rather than killing it, so JACK never waits on
+a dead client.
 
 Transmitting: `darkice` reads stereo audio from JACK (client `nullcast`) and
 sends MP3 straight to `nullband.org:8000` as an Icecast source, with the
 token as the password and `live-<token>` as the mount.
 
-Files live in `~/dust/data/nullcast/`: `settings.lua`; while listening
-`listen.sh`, `listen.fifo`, `listen.log` and `listen.pid`; while
+Files live in `~/dust/data/nullcast/`: `settings.lua`; `bin/nullcast-rx-N`;
+while listening `listen.sh`, `listen.pid` and `listen.<pid>.fifo/.log/.lock`
+(the last log is kept as `listen.last.log`); while
 transmitting `darkice.cfg` (holds the token; mode 600), `darkice.log` and
 `darkice.pid`.
 

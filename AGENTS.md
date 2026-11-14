@@ -10,7 +10,7 @@ On a norns shield (v3.0.1, armv7l, 10.0.0.138):
 - Transmit works end to end: token request, darkice install through
   norns-deps, on air with countdown and unit number, stream audible on
   nullband.org, stop with confirm.
-- Listen works: mpg123 + jack-stdio install through norns-deps, station
+- Listen works: mpg123 + nullcast-rx install through norns-deps, station
   list from `/health`, play into `crone:input_1/2`, tuning with E2 (LOAD
   over the FIFO), level with E3, route change to headphones, K3 stop,
   playing on across a script load, the `nullcast_listen` param.
@@ -31,13 +31,40 @@ On a fates (rp4, norns 2.x update 250926, armv7l, 10.0.0.2):
   norns-matron.service has no `LimitRTPRIO`, so jack-stdin (started from
   matron) got a non-realtime JACK thread. The launchers now raise their
   shell's limits with `sudo -n prlimit` (`Listen.RT_LIMITS`, also in
-  transmit.lua for darkice): jack-stdin's process thread is SCHED_FIFO 90
-  and there were 0 xruns in 2 minutes of listening. The shield on norns 3
-  never showed it: norns-main.service sets `LimitRTPRIO=95`.
-- jack-stdin still uses ~20% of a core: its reader thread calls `read()`
-  once per 8-byte frame. Harmless for xruns now, but mpg123's own JACK
-  output (`-o jack`, `output_jack.so` is installed) would drop jack-stdin
-  and the pipe altogether. Untried.
+  transmit.lua for darkice): the JACK process thread is SCHED_FIFO 90 and
+  listening runs without xruns. The shield on norns 3 never showed it:
+  norns-main.service sets `LimitRTPRIO=95`.
+- jack-stdin took ~20% of a core (its reader thread calls `read()` once
+  per 8-byte frame) plus ~9% for mpg123. mpg123's own JACK output
+  (`-o jack`) was tried and dropped: its close unregisters the ports and
+  frees the ring buffer *before* `jack_client_close`, so the realtime
+  callback can run on freed memory ("jack_port_get_buffer called with an
+  incorrect port", then SIGSEGV). mpg123 opens/closes the device several
+  times at startup to probe formats (twice with `-r`, ~18 times without),
+  and segfaulted on 10-30% of starts on the shield (1.26.4); with `-b` its
+  buffer process fails too ("buffer overflow detected", "out123 error 8").
+  Each crash is a burst of xruns for every client.
+- Now: `mpg123 -s -r 48000 -e f32 --stereo | nullcast-rx` (lib/nullcast_rx.c,
+  built by a norns-deps `cmd` step into `~/dust/data/nullcast/bin/`
+  `nullcast-rx-N`; bump N in `Listen.RX` when the source changes). Reads
+  64 kB blocks into a 1 s ring buffer, prebuffers 0.5 s (and again after
+  running dry), mlockall()s, deactivates before closing. ~1% CPU for rx,
+  ~1-5% for mpg123. Tested on both devices: install/build through the
+  installer, 6/6 stop-start cycles, route changes there and back, retune,
+  no leftover processes, 30 s capture with no gaps.
+- Stopping: STOP+QUIT to mpg123 through the pipeline's own FIFO (files are
+  per pipeline, `listen.<pgid>.*`, so nothing reaches the next pipeline);
+  rx sees EOF and closes cleanly. A reaper SIGKILLs the process group after
+  6 s. The pidfile is written by `start()` itself (from `$!`), and starts
+  wait for pipelines still quitting. dash's `kill` has no `--`.
+- Residual: on the fates about one 3-cycle burst (all clients late) per
+  10 min of listening with the listen page open, none with it hidden or
+  with the pipeline run by hand. `running()` used to fork matron
+  (`kill -0`) every tick; it reads `/proc/<pid>/stat` now, which removed
+  bursts that came every ~10 s.
+- Measuring xruns: don't count while a non-realtime JACK client of your
+  own runs (jack-stdout from ssh shows up as `jstdout was not finished`),
+  nor during a service restart.
 - `RemoveIPC` was on (systemd default): an ssh logout wiped JACK's shared
   memory ("audio system fail"). `loginctl enable-linger we` is set there
   now. Services: norns-jack/crone/sclang/matron (no norns-main); restart
@@ -61,9 +88,8 @@ Use the noseda skill (`references/tasks/debug.md`).
   starts it under `setpriv --pdeathsig KILL` (dies with the shell). A
   shell trap was tried first and failed intermittently: systemd then waits
   90 s and JACK ends up with a stale crone client.
-- In remote mode mpg123 writes float32 to raw output unless told otherwise,
-  and jack-stdin defaults to 16-bit: the stream turned into static. Both
-  ends now say float (`-e f32`, `-e float`). jack-stdout also writes float
+- mpg123's raw output must be float (`-e f32`): nullcast-rx reads float32,
+  and jack-stdin once turned 16-bit into static. jack-stdout writes float
   by default even though it prints "16bit". Check audio by capturing a port
   with `jack-stdout -e float <ports>` and comparing it with
   `curl .../icecast/<mount> | ffmpeg -f f32le`; energy above 14 kHz shows
@@ -76,6 +102,11 @@ Use the noseda skill (`references/tasks/debug.md`).
   with `\x1b` (ESC), not a newline. Output comes back over the socket.
 - `scripts/nrepl.py` needs `websocket-client`; a venv in the scratchpad
   works.
+- `jack-stdout` from ssh for captures: raise its limits first
+  (`sudo -n prlimit --pid $$ --rtprio=95:95 --memlock=unlimited:unlimited`)
+  or it causes xruns itself. Count glitches as `XRun` *and*
+  `Process error` lines in `journalctl -u norns-jack`.
+- On norns 3, `_norns.screen_export_png` can catch a half-drawn frame.
 - Drive the page from the REPL: `_menu.set_mode(true); _menu.set_page("nullcast")`,
   then `_menu.key(3,1); _menu.key(3,0)`. Read state through the menu's upvalue:
   `debug.getupvalue(_menu.m.nullcast.key, i)` named `S`.
