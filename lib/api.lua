@@ -20,10 +20,6 @@ local function safe(s)
 end
 Api.safe = safe
 
-local function escape_pattern(s)
-  return (s:gsub("%W", "%%%0"))
-end
-
 local function curl(args, cb)
   local done = false
   local function finish(out, err)
@@ -63,17 +59,25 @@ function Api.request_credentials(cb)
   end)
 end
 
--- Is our mount on air? cb({ live = bool, unit = n or nil }) or cb(nil, err)
-function Api.health(mount, cb)
+-- Every signal on air, ghosts included:
+-- cb({ [mount] = { unit = n, listeners = n, looping = bool }, ... })
+-- or cb(nil, err). Mounts that aren't safe for a shell are left out.
+function Api.signals(cb)
   curl("'" .. Api.BASE .. "/health'", function(out, err)
     if not out then return cb(nil, err) end
-    if not out:find("{") then return cb(nil, "unexpected reply") end
-    local id = escape_pattern('"ice_' .. mount .. '"')
-    local live = out:find(id) ~= nil
-    local unit
-    local obj = out:match(id .. "%s*:%s*(%b{})")
-    if obj then unit = tonumber(obj:match('"unit"%s*:%s*"?(%d+)')) end
-    cb({ live = live, unit = unit })
+    local body = out:match('"signals"%s*:%s*(%b{})')
+    if not body then return cb(nil, "unexpected reply") end
+    local list = {}
+    for mount, obj in body:gmatch('"ice_([^"]+)"%s*:%s*(%b{})') do
+      if safe(mount) then
+        list[mount] = {
+          unit = tonumber(obj:match('"unit"%s*:%s*"?(%d+)')),
+          listeners = tonumber(obj:match('"listeners"%s*:%s*(%d+)')) or 0,
+          looping = obj:match('"looping"%s*:%s*true') ~= nil,
+        }
+      end
+    end
+    cb(list)
   end)
 end
 
