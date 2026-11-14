@@ -1,4 +1,4 @@
-# nullband
+# nullcast
 
 A norns mod that transmits to [nullband](https://nullband.org). Request a
 one-time token, go on air, and stop from the mod menu. A 45-minute countdown
@@ -11,7 +11,7 @@ generative systems, ambient sound. Commercial music will be removed.
 ## Install
 
 ```
-;install https://github.com/vehka/nullband
+;install https://github.com/vehka/nullcast
 ```
 
 Enable it in SYSTEM > MODS, then restart norns. The first time you request a
@@ -52,13 +52,13 @@ Source and bitrate can't change while on air.
 
 ## How it works
 
-`darkice` reads stereo audio from JACK (client `nullband`) and sends MP3
+`darkice` reads stereo audio from JACK (client `nullcast`) and sends MP3
 straight to `nullband.org:8000` as an Icecast source, with the token as the
 password and `live-<token>` as the mount. Nothing runs locally besides
 darkice. The mod polls `https://nullband.org/health` to see when the stream is
 on air and which unit it got.
 
-Files live in `~/dust/data/nullband/`: `settings.lua`, and while
+Files live in `~/dust/data/nullcast/`: `settings.lua`, and while
 transmitting, `darkice.cfg` (holds the token; mode 600), `darkice.log` and
 `darkice.pid`.
 

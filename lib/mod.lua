@@ -1,4 +1,4 @@
--- nullband
+-- nullcast
 -- v0.1.0 by vehka
 -- Transmit norns to nullband.org: request a one-time token, go on air,
 -- stop. 45-minute transmission window.
@@ -10,7 +10,7 @@
 
 local mod = require 'core/mods'
 
-local NAME = mod.this_name or "nullband"
+local NAME = mod.this_name or "nullcast"
 local ROOT = _path.code .. NAME .. "/lib/"
 
 local api = dofile(ROOT .. "api.lua")
@@ -24,9 +24,9 @@ local HEALTH_EVERY_START = 3
 local HEALTH_EVERY_LIVE = 10
 
 local BITRATES = { 96, 128, 192, 256, 320 }
-local SETTINGS_FILE = _path.data .. "nullband/settings.lua"
+local SETTINGS_FILE = _path.data .. "nullcast/settings.lua"
 
-local deps = deps_lib.new { name = "nullband", dir = _path.data .. "nullband/deps" }
+local deps = deps_lib.new { name = "nullcast", dir = _path.data .. "nullcast/deps" }
 deps:add { id = "darkice", label = "darkice", check = "darkice",
            pkg = "darkice", size = "2 MB",
            why = "streams JACK audio to Icecast" }
@@ -86,7 +86,7 @@ end
 
 local function save_settings()
   if uninstalled() then return end
-  os.execute("mkdir -p '" .. _path.data .. "nullband'")
+  os.execute("mkdir -p '" .. _path.data .. "nullcast'")
   local f = io.open(SETTINGS_FILE, "w")
   if not f then return end
   f:write("return {\n")
@@ -236,7 +236,7 @@ local function ensure_ticker(force)
       clock.sleep(1)
       S.last_tick = util.time()
       local ok, err = pcall(tick)
-      if not ok then print("nullband: " .. tostring(err)) end
+      if not ok then print("nullcast: " .. tostring(err)) end
     end
   end)
 end
@@ -395,20 +395,20 @@ mod.menu.register(NAME, m)
 -- hooks
 --
 
-mod.hook.register("system_post_startup", "nullband_startup", function()
+mod.hook.register("system_post_startup", "nullcast_startup", function()
   load_settings()
   -- a darkice left over from before a matron restart has lost its state
   transmit.stop()
 end)
 
-mod.hook.register("system_pre_shutdown", "nullband_shutdown", function()
+mod.hook.register("system_pre_shutdown", "nullcast_shutdown", function()
   transmit.stop()
 end)
 
 -- clocks are cancelled when a script is cleared; start ours again
 -- (post_cleanup runs before clock.cleanup, so a clock started there would
 -- die; pre_init runs after it, post_init again once init has finished)
-mod.hook.register("script_pre_init", "nullband_pre_init",
+mod.hook.register("script_pre_init", "nullcast_pre_init",
   function() ensure_ticker(true) end)
-mod.hook.register("script_post_init", "nullband_post_init",
+mod.hook.register("script_post_init", "nullcast_post_init",
   function() ensure_ticker(true) end)

@@ -1,18 +1,18 @@
 -- transmit.lua: run darkice as the Icecast source client.
 --
--- darkice reads from JACK (client "nullband", ports left/right) and sends
+-- darkice reads from JACK (client "nullcast", ports left/right) and sends
 -- MP3 straight to nullband.org. It runs detached, so it keeps going while
 -- scripts are loaded and unloaded. It never reconnects by itself: a
 -- nullband token is single use, so a dropped stream needs a new one.
 
 local Transmit = {}
 
-Transmit.dir = _path.data .. "nullband/"
+Transmit.dir = _path.data .. "nullcast/"
 Transmit.cfg = Transmit.dir .. "darkice.cfg"
 Transmit.pidfile = Transmit.dir .. "darkice.pid"
 Transmit.logfile = Transmit.dir .. "darkice.log"
 
-Transmit.CLIENT = "nullband"
+Transmit.CLIENT = "nullcast"
 
 Transmit.SOURCES = {
   { name = "norns out", ports = { "crone:output_1", "crone:output_2" } },
