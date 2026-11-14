@@ -7,7 +7,8 @@ Transmitting requests a one-time token and shows a 45-minute countdown. Both
 keep running while you load and play other scripts, and both can run at once.
 
 Nullband is for original transmissions: field recordings, live performance,
-generative systems, ambient sound. Commercial music will be removed.
+generative systems, ambient sound. Commercial music will be removed. Remixing
+others' streams is allowed.
 
 ## Install
 
@@ -70,11 +71,6 @@ input process it, and softcut can record it. Set **listen into** to
 Each token is single use. If the stream drops (network, server), it does not
 reconnect. Request a new token instead.
 
-Nullband is for original transmissions. Recasting other signals live is
-fine: listen into norns, process the station with a script, and transmit
-with source `norns out`. (`inputs` is the raw audio inputs only, without
-the station.)
-
 ### Settings (E2 select, E3 change)
 
 - **transmit source**: `norns out` (everything norns plays,
@@ -84,7 +80,7 @@ the station.)
 - **ghost transmission**: on by default; off asks nullband not to keep a
   ghost of your transmission
 - **stop at 00:00**: stop by itself when the window is over (default off;
-  nullband lets a stream run on past it)
+  nullband lets a stream run on past it, maybe? untested as of now)
 - **listen into**: `norns in` (default) or `headphones`
 - **own signal**: `skip` (default) or `allow`. While you transmit, your own
   signal is on the dial too, marked with a tick. Listening to it into norns
