@@ -22,6 +22,27 @@ On a norns shield (v3.0.1, armv7l, 10.0.0.138):
   could point at their new clock (`clock.lua:62 ... thread expected`). It
   now cancels only while `clock.threads[id]` is still its own coroutine.
 
+On a fates (rp4, norns 2.x update 250926, armv7l, 10.0.0.2):
+
+- Install needed norns-deps' archived-Raspbian-buster repair (the old
+  raspbian.raspberrypi.org host is gone); then listen works.
+- Listening caused xruns (`!!!` on the home screen, ~16 per minute, audio
+  dropouts). jackd runs synchronously (`-S`) and 2.x's
+  norns-matron.service has no `LimitRTPRIO`, so jack-stdin (started from
+  matron) got a non-realtime JACK thread. The launchers now raise their
+  shell's limits with `sudo -n prlimit` (`Listen.RT_LIMITS`, also in
+  transmit.lua for darkice): jack-stdin's process thread is SCHED_FIFO 90
+  and there were 0 xruns in 2 minutes of listening. The shield on norns 3
+  never showed it: norns-main.service sets `LimitRTPRIO=95`.
+- jack-stdin still uses ~20% of a core: its reader thread calls `read()`
+  once per 8-byte frame. Harmless for xruns now, but mpg123's own JACK
+  output (`-o jack`, `output_jack.so` is installed) would drop jack-stdin
+  and the pipe altogether. Untried.
+- `RemoveIPC` was on (systemd default): an ssh logout wiped JACK's shared
+  memory ("audio system fail"). `loginctl enable-linger we` is set there
+  now. Services: norns-jack/crone/sclang/matron (no norns-main); restart
+  sclang, crone, matron in that order, like SYSTEM > RESTART.
+
 ## Testing on the shield
 
 Use the noseda skill (`references/tasks/debug.md`).

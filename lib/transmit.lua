@@ -107,6 +107,9 @@ function Transmit.start(c, opts)
   local src = Transmit.SOURCES[opts.source] or Transmit.SOURCES[1]
   local cl = Transmit.CLIENT
   local script = table.concat({
+    -- realtime limits for darkice's JACK thread, see Listen.RT_LIMITS
+    "sudo -n prlimit --pid $$ --rtprio=95:95"
+      .. " --memlock=unlimited:unlimited >/dev/null 2>&1",
     "darkice -c '" .. Transmit.cfg .. "' > '" .. Transmit.logfile .. "' 2>&1 &",
     "echo $! > '" .. Transmit.pidfile .. "'",
     "i=0",

@@ -76,6 +76,17 @@ local function command(...)
     .. ") >/dev/null 2>&1 &")
 end
 
+-- jackd runs synchronously (-S): every cycle waits for every client, so a
+-- client whose process thread isn't realtime causes xruns for crone,
+-- softcut and SuperCollider alike. libjack makes that thread SCHED_FIFO
+-- only if the process may: on norns 2.x norns-matron.service has no
+-- LimitRTPRIO, so whatever matron starts gets rtprio 0 (norns 3's
+-- norns-main.service sets 95). The launchers raise their shell's limits
+-- with passwordless sudo, and the clients they start inherit them. Where
+-- sudo -n isn't available (desktop) nothing changes.
+Listen.RT_LIMITS = "sudo -n prlimit --pid $$ --rtprio=95:95"
+  .. " --memlock=unlimited:unlimited >/dev/null 2>&1"
+
 -- route: index into ROUTES, volume: 0-100, mount: first station (checked
 -- with api.safe), loaded in the same write as the setup commands
 function Listen.start(route, volume, mount)
@@ -86,6 +97,7 @@ function Listen.start(route, volume, mount)
   -- the whole pipeline
   local script = table.concat({
     "echo $$ > '" .. Listen.pidfile .. "'",
+    Listen.RT_LIMITS,
     "rm -f '" .. Listen.fifo .. "'",
     -- mpg123 ignores SIGTERM in remote mode. When systemd stops norns it
     -- sends SIGTERM to everything in the unit and then waits 90 s for
