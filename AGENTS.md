@@ -127,7 +127,7 @@ Use the noseda skill (`references/tasks/debug.md`).
 ## Not tested yet
 
 - [ ] Settings items locked while on air (dimmed, E3 ignored).
-- [ ] Listen and transmit at once, `norns out` source: the station is
+- [x] Listen and transmit at once, `norns out` source: the station is
       audible in the transmission (needs a token).
 - [ ] Own signal: tick on the dial while live, skipped with `skip`,
       tunable with `allow`, listening stops if switched back to `skip`.
@@ -160,7 +160,7 @@ Use the noseda skill (`references/tasks/debug.md`).
       mpg123, jack-stdio (in the manifest), stops both, deletes
       `~/dust/data/nullcast`.
 - [ ] curl install path: curl was already on the shield.
-- [ ] A fresh install from git (`;install`), once there is a public repo.
+- [x] A fresh install from git (`;install`), once there is a public repo.
 
 ## Ideas
 
@@ -174,11 +174,5 @@ Use the noseda skill (`references/tasks/debug.md`).
 
 ## Repo
 
-- Commit as vehka <vehka@iki.fi> (set in this repo's git config).
 - `lib/deps.lua` and `lib/deps/` are vendored from vehka/norns-deps at
   6dbc4a6; don't edit them here, update from upstream.
-- GitHub: `vehka/nullcast` (remote `origin`, push with the `vehka` gh
-  account). Renamed from nullband on 2026-11-14; the service is still
-  nullband.org, so only the mod name, JACK client, hook names and the data
-  folder changed. The test shield is migrated (old copy in
-  `/tmp/old-nullband`, gone at reboot).
