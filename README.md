@@ -68,7 +68,7 @@ input process it, and softcut can record it. Set **listen into** to
 2. **K3 go on air**: starts darkice and connects the audio. The mod waits up
    to 60 s for nullband to detect the signal.
 3. **ON AIR**: the countdown runs from 45:00 and the screen shows your unit
-   number. Press K2 to leave the page; the transmission keeps going.
+   number. Nullband cuts the stream at 00:00, so the mod stops there too. Press K2 to leave the page; the transmission keeps going.
 4. **K3 stop**, then K3 again to confirm.
 
 Each token is single use. If the stream drops (network, server), it does not
@@ -82,8 +82,6 @@ reconnect. Request a new token instead.
 - **bitrate**: 96–320 kbps MP3, default 128
 - **ghost transmission**: on by default; off asks nullband not to keep a
   ghost of your transmission
-- **stop at 00:00**: stop by itself when the window is over (default off;
-  nullband lets a stream run on past it, maybe? untested as of now)
 - **listen into**: `norns in` (default) or `headphones`
 - **own signal**: `skip` (default) or `allow`. While you transmit, your own
   signal is on the dial too, marked with a tick. Listening to it into norns

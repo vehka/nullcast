@@ -104,7 +104,7 @@ local BANDS = 20
 for i = 1, BANDS do L.up[i], L.down[i] = 0, 0 end
 
 local settings = {
-  source = 1, bitrate = 2, ghost = true, autostop = false,
+  source = 1, bitrate = 2, ghost = true,
   route = 1, level = 80, feedback = false,
 }
 
@@ -127,9 +127,6 @@ local SETTINGS = {
   { id = "ghost", name = "ghost transmission", tx = true,
     show = function() return settings.ghost and "on" or "off" end,
     delta = function(d) settings.ghost = d > 0 end },
-  { id = "autostop", name = "stop at 00:00",
-    show = function() return settings.autostop and "on" or "off" end,
-    delta = function(d) settings.autostop = d > 0 end },
   { id = "route", name = "listen into",
     show = function() return listen.ROUTES[settings.route].name end,
     delta = function(d) settings.route = util.clamp(settings.route + d, 1, #listen.ROUTES) end },
@@ -182,9 +179,8 @@ local function set_state(state, msg, detail)
 end
 
 local function fmt_time(secs)
-  local neg = secs < 0
-  secs = math.abs(math.floor(secs))
-  return (neg and "+" or "") .. string.format("%02d:%02d", secs // 60, secs % 60)
+  secs = math.max(0, math.floor(secs))
+  return string.format("%02d:%02d", secs // 60, secs % 60)
 end
 
 local function flash(msg)
@@ -515,8 +511,8 @@ local function slow_tick(now)
     stop("no signal detected", { "nullband didn't see the stream" })
     return
   end
-  if (st == "live" or st == "confirm_stop") and settings.autostop
-      and now - S.on_air >= WINDOW then
+  -- nullband cuts the stream at the end of the window
+  if (st == "live" or st == "confirm_stop") and now - S.on_air >= WINDOW then
     stop()
     return
   end
@@ -788,9 +784,9 @@ local function draw_transmit()
     text(64, 30, "detecting signal", 8, "center")
     text(64, 42, waited .. " / " .. DETECT_TIMEOUT .. " s", 4, "center")
   elseif st == "live" or st == "confirm_stop" then
-    local left = WINDOW - (util.time() - S.on_air)
+    local left = math.max(0, WINDOW - (util.time() - S.on_air))
     screen.font_size(24)
-    text(64, 40, fmt_time(left), left < 0 and 4 or 15, "center")
+    text(64, 40, fmt_time(left), 15, "center")
     screen.font_size(8)
     local unit = S.unit and string.format("unit %05d", S.unit) or "unit ..."
     text(64, 52, st == "confirm_stop" and "stop transmission?" or unit,

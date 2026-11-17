@@ -143,9 +143,8 @@ Use the noseda skill (`references/tasks/debug.md`).
 - [ ] Ghost opt-out: setting off → `POST /admin/ghost-optout` once on air.
       Confirm the server accepts it (response, and whether the ghost is
       really suppressed).
-- [ ] Stop at 00:00 (autostop): needs 45 minutes on air, or temporarily
-      lower `WINDOW` on the device copy.
-- [ ] Overtime display past 00:00 with autostop off (`+mm:ss`).
+- [ ] Stop at 00:00 (always; nullband cuts the stream there): needs 45
+      minutes on air, or temporarily lower `WINDOW` on the device copy.
 - [ ] Dropped stream: kill darkice or cut the network while live; expect
       the "dropped" error screen with the darkice log tail.
 - [ ] Detection timeout: no signal within 60 s → "no signal detected"
